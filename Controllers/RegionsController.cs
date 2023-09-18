@@ -107,7 +107,7 @@ namespace NZWalks.API.Controllers
 
 
         // PUT to Update Region
-        // PUT: https://localhost:PORT/api/regions
+        // PUT: https://localhost:PORT/api/regions/{id}
 
         [HttpPut]
         [Route("{id:Guid}")]
@@ -140,5 +140,27 @@ namespace NZWalks.API.Controllers
             return Ok(regionDTO);
 
         }
+
+        // DELETE the Region
+        // PUT: https://localhost:PORT/api/regions/{id}
+
+        [HttpDelete]
+        [Route("{id:Guid}")]
+
+        public IActionResult Delete([FromRoute] Guid id)
+        {
+            var regionDomainModel= dBContex.Region.FirstOrDefault(x => x.Id == id);
+            if(regionDomainModel == null)
+            {
+                return NotFound();
+            }
+
+            // Delete Region
+            dBContex.Remove(regionDomainModel);
+            dBContex.SaveChanges();
+
+            return Ok();
+        }
+
     }
 }
