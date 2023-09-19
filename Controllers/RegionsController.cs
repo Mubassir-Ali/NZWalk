@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using NZWalks.API.Data;
 using NZWalks.API.Models.Domain;
 using NZWalks.API.Models.DTO;
+using NZWalks.API.Repositories;
 
 namespace NZWalks.API.Controllers
 {
@@ -12,10 +13,12 @@ namespace NZWalks.API.Controllers
     public class RegionsController : ControllerBase
     {
         private readonly NZWalkDBContex dBContex;
+        private readonly IRegionRepository regionRepository;
 
-        public RegionsController(NZWalkDBContex dBContex)
+        public RegionsController(NZWalkDBContex dBContex, IRegionRepository regionRepository)
         {
             this.dBContex = dBContex;
+            this.regionRepository = regionRepository;
         }
 
         // GET all Regions
@@ -24,7 +27,8 @@ namespace NZWalks.API.Controllers
         public async Task<IActionResult> GetAllRegions()
         {
             //Get data from database - Domain Model
-            var regionDomains = await dBContex.Region.ToListAsync();
+            // Repository GetAllAsync
+            var regionDomains = await regionRepository.GetAllAsync();
 
             //Map Domain Model to DTOs
             var regionDTO = new List<RegionDTO>();
@@ -53,8 +57,8 @@ namespace NZWalks.API.Controllers
         public async Task<IActionResult> GetRegionById([FromRoute] Guid id)
         {
             //Get data from database - Domain Model
-            //var regionDomain = dBContex.Region.Find(id);
-            var regionDomain = await dBContex.Region.FirstOrDefaultAsync(x => x.Id == id);
+            //Repository GetByIdAsync;
+            var regionDomain = await regionRepository.GetByIdAsync(id);
 
             if (regionDomain == null)
             {
@@ -89,8 +93,8 @@ namespace NZWalks.API.Controllers
             };
 
             // Use Domain Model to create Region
-            await dBContex.Region.AddAsync(regionDomainModel);
-            await dBContex.SaveChangesAsync();
+            // Repository CreateAsync
+            regionDomainModel = await regionRepository.CreateAsync(regionDomainModel);
 
             // Map Domain model back to DTO
 
@@ -114,21 +118,22 @@ namespace NZWalks.API.Controllers
         [Route("{id:Guid}")]
         public async Task<IActionResult> Update([FromRoute] Guid id, [FromBody] UpdateRegionRequestDTO updateRegionRequestDTO)
         {
-            // check if region exist
-            var regionDomainModal = await dBContex.Region.FirstOrDefaultAsync(x => x.Id == id);
+            
+            var regionDomainModal = new Region()
+            {
+                Code=updateRegionRequestDTO.Code,
+                Name=updateRegionRequestDTO.Name,
+                RegionImageUrl=updateRegionRequestDTO.RegionImageUrl
+            };
+
+            regionDomainModal = await regionRepository.UpdateAsync(id,regionDomainModal);
 
             if (regionDomainModal == null)
             {
                 return NotFound();
             }
 
-            // Map DTO to Domain Model
-            regionDomainModal.Name = updateRegionRequestDTO.Name;
-            regionDomainModal.Code = updateRegionRequestDTO.Code;
-            regionDomainModal.RegionImageUrl = updateRegionRequestDTO.RegionImageUrl;
-
-            await dBContex.SaveChangesAsync();
-
+           
             // Convert Domain Model to DTO
             var regionDTO = new RegionDTO()
             {
@@ -150,15 +155,20 @@ namespace NZWalks.API.Controllers
 
         public async Task<IActionResult> Delete([FromRoute] Guid id)
         {
-            var regionDomainModel = await dBContex.Region.FirstOrDefaultAsync(x => x.Id == id);
+            var regionDomainModel = await regionRepository.DeleteAsync(id);
             if (regionDomainModel == null)
             {
                 return NotFound();
             }
 
-            // Delete Region
-            dBContex.Remove(regionDomainModel);
-            await dBContex.SaveChangesAsync();
+            // Map Domain Model to DTO (if you want to send delete region)
+            //var regionDTO = new RegionDTO()
+            //{
+            //    Id = regionDomainModel.Id,
+            //    Name = regionDomainModel.Name,
+            //    Code = regionDomainModel.Code,
+            //    RegionImageUrl = regionDomainModel.RegionImageUrl
+            //};
 
             return Ok();
         }
