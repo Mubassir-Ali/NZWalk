@@ -53,12 +53,8 @@ namespace NZWalks.API.Controllers
                 return NotFound();
 
             }
-            //Map Domain Model to DTOs
 
-            var regionDTO = mapper.Map<RegionDTO>(regionDomain);
-
-
-            return Ok(regionDTO);
+            return Ok(mapper.Map<RegionDTO>(regionDomain));
         }
 
         // POST to create New Region
